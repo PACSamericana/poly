@@ -338,41 +338,22 @@ class CTReportGenerator:
             }
         }
         
+    def log_processing_step(self, step: str, message: str):
+        """Utility function to log processing steps"""
+        st.text(f"[{step}] {message}")
+        
     async def categorize_findings(self, dictation: str) -> Dict[str, str]:
-        """Preprocessing step to categorize findings into appropriate sections."""
+        """Preprocessing step to categorize findings with enhanced logging."""
+        self.log_processing_step("PREPROCESS", f"Input dictation: {dictation}")
         
         prompt = """Categorize each finding in this dictation into the appropriate section.
         Only include findings that are explicitly mentioned.
         
-        Available sections:
-        - lower_chest
-        - liver
-        - gallbladder_and_bile_ducts
-        - pancreas
-        - spleen 
-        - adrenal_glands
-        - kidneys_and_ureters
-        - urinary_bladder
-        - reproductive
-        - gastrointestinal
-        - retroperitoneum_peritoneum
-        - vessels
-        - lymph_nodes
-        - abdominal_wall_soft_tissues
-        - bones
-
-        Return a JSON object where keys are section names and values are the relevant findings.
-        Only include sections that have findings. Be specific and precise.
+        Available sections: [list of sections...]
         
-        Example output format:
-        {
-            "liver": "mild steatosis",
-            "kidneys_and_ureters": "5mm distal right ureter stone, delayed right nephrogram, right ureter inflammation"
-        }
-
         Dictation: "{dictation}"
         """
-
+        
         try:
             completion = await self.client.chat.completions.create(
                 model="llama-3.2-3b-preview",
@@ -386,41 +367,32 @@ class CTReportGenerator:
             )
             
             categorized = json.loads(completion.choices[0].message.content)
+            self.log_processing_step("PREPROCESS", f"Categorized findings: {json.dumps(categorized, indent=2)}")
             return categorized
             
         except Exception as e:
-            st.error(f"Error categorizing findings: {str(e)}")
+            self.log_processing_step("ERROR", f"Preprocessing error: {str(e)}")
             return {}
 
     async def process_section(self, section: str, section_findings: str = None) -> Dict[str, Any]:
-        """Process a single section using Groq's Llama 3.2 3B model."""
+        """Process a single section with enhanced logging."""
+        self.log_processing_step(f"SECTION: {section}", 
+                               f"Processing with findings: {section_findings if section_findings else 'Using normal template'}")
         
-        section_template = json.dumps(self.template["findings"]["sections"].get(section, {}), indent=2)
+        section_template = self.template["findings"]["sections"].get(section, {})
+        normal_text = section_template.get("normal", "Normal examination")
         
-        # Modify prompt to use categorized findings
-        prompt = f"""You are processing ONLY the {section} section of a CT abdomen/pelvis report.
-
-IMPORTANT RULES:
-1. Use ONLY the provided findings for this section
-2. If no findings are provided, use the normal template text
-3. Format the finding using appropriate language from the template
-
-TEMPLATE OPTIONS FOR THIS SECTION:
-{section_template}
-
-Findings for this section: {section_findings if section_findings else "No specific findings - use normal template"}
-
-Return a JSON object with this exact format:
-{{
-    "{section}": {{
-        "text": "finding text here."
-    }}
-}}"""
-
+        if not section_findings:
+            self.log_processing_step(f"SECTION: {section}", f"Using normal template text: {normal_text}")
+            return {section: {"text": normal_text}}
+            
         try:
             completion = await self.client.chat.completions.create(
                 model="llama-3.2-3b-preview",
-                messages=[{"role": "system", "content": prompt}],
+                messages=[{
+                    "role": "system", 
+                    "content": f"Process finding for {section}: {section_findings}"
+                }],
                 temperature=0,
                 max_tokens=8192,
                 top_p=0.1,
@@ -429,92 +401,83 @@ Return a JSON object with this exact format:
                 stop=None
             )
             
-            content = completion.choices[0].message.content
-            return json.loads(content)
+            result = json.loads(completion.choices[0].message.content)
+            self.log_processing_step(f"SECTION: {section}", f"Generated text: {result[section]['text']}")
+            return result
             
         except Exception as e:
-            st.error(f"Error processing {section}: {str(e)}")
-            return None
+            self.log_processing_step("ERROR", f"Error processing {section}: {str(e)}")
+            return {section: {"text": f"Error processing {section}"}}
+
+    def convert_to_text_report(self, report_json: Dict[str, Any]) -> str:
+        """Convert JSON report to formatted text."""
+        text_report = []
+        text_report.append("CT ABDOMEN AND PELVIS REPORT")
+        text_report.append("\nFINDINGS:")
+        
+        sections = report_json.get("findings", {}).get("sections", {})
+        for section in self.sections:
+            if section in sections:
+                # Convert section name to title case and replace underscores
+                section_name = section.replace("_", " ").title()
+                section_text = sections[section]["text"]
+                text_report.append(f"\n{section_name}:")
+                text_report.append(f"{section_text}")
+        
+        return "\n".join(text_report)
 
     async def generate_report(self, dictation: str) -> Dict[str, Any]:
-        """Generate complete report by processing all sections concurrently."""
-        report = {"findings": {"sections": {}}}
+        """Generate complete report with logging."""
+        self.log_processing_step("START", "Beginning report generation")
         
-        # First, categorize all findings
+        # First, categorize findings
         categorized_findings = await self.categorize_findings(dictation)
         
-        # Create tasks for all sections
-        tasks = []
+        # Process each section
+        report = {"findings": {"sections": {}}}
         for section in self.sections:
-            # Pass only the relevant findings for each section
             section_findings = categorized_findings.get(section)
-            task = self.process_section(section, section_findings)
-            tasks.append(task)
-        
-        # Wait for all sections to complete
-        results = await asyncio.gather(*tasks)
-        
-        # Combine results
-        for result in results:
+            result = await self.process_section(section, section_findings)
             if result:
                 report["findings"]["sections"].update(result)
-                
+        
+        self.log_processing_step("COMPLETE", "Report generation finished")
         return report
 
 # Modify the Streamlit interface part:
 st.title('CT Report Generator')
 
-# Input area for dictation
 dictation = st.text_area(
     "Enter dictation:",
-    placeholder="Example: mild steatosis, 5mm distal right ureter stone delayed right nephrogram with right ureter inflammation",
+    placeholder="Example: mild steatosis, 5mm distal right ureter stone...",
     height=100
 )
-
-# Progress tracking
-progress_text = "Operation in progress. Please wait..."
-section_progress = None
 
 if st.button('Generate Report'):
     if dictation:
         try:
-            # Initialize progress bar
-            section_progress = st.progress(0)
-            status_text = st.empty()
-            
-            # Create report generator
+            st.subheader("Processing Log:")
             generator = CTReportGenerator()
-            
-            # Run the async function
             report = asyncio.run(generator.generate_report(dictation))
             
-            # Display results
-            st.json(report)
+            # Display formatted text report
+            st.subheader("Generated Report:")
+            text_report = generator.convert_to_text_report(report)
+            st.text(text_report)
             
-            # Save report
+            # Still save the JSON for reference
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"ct_report_{timestamp}.json"
             with open(filename, 'w') as f:
                 json.dump(report, f, indent=2)
             st.success(f"Report saved as {filename}")
             
+            # Show raw JSON if needed
+            if st.checkbox("Show raw JSON"):
+                st.json(report)
+                
         except Exception as e:
             st.error(f"Error generating report: {str(e)}")
-        finally:
-            if section_progress is not None:
-                section_progress.empty()
-            
     else:
         st.error("Please enter dictation text.")
 
-# Add some usage instructions
-with st.sidebar:
-    st.header("Instructions")
-    st.write("""
-    1. Enter the dictation text in the input area
-    2. Click 'Generate Report' to process
-    3. The app will analyze each anatomical section
-    4. Results will be displayed and saved as JSON
-    
-    Note: Processing may take a few minutes as each section is analyzed sequentially.
-    """)
