@@ -342,22 +342,50 @@ class CTReportGenerator:
         """Utility function to log processing steps"""
         st.text(f"[{step}] {message}")
         
-    async def categorize_findings(self, dictation: str) -> Dict[str, str]:
+async def categorize_findings(self, dictation: str) -> Dict[str, str]:
         """Preprocessing step to categorize findings with enhanced logging."""
         self.log_processing_step("PREPROCESS", f"Input dictation: {dictation}")
         
-        prompt = """Categorize each finding in this dictation into the appropriate section.
-        Only include findings that are explicitly mentioned.
-        
-        Available sections: [list of sections...]
-        
-        Dictation: "{dictation}"
-        """
-        
+        prompt = f"""Please help me categorize these radiology findings into JSON format.
+
+        Task: Take these raw findings and organize them by anatomical section.
+
+        Raw findings: "{dictation}"
+
+        Rules:
+        1. Only include sections that have explicit findings
+        2. Use exact finding language
+        3. Return a valid JSON object
+        4. For each finding, identify the correct anatomical section from this list:
+           - lower_chest
+           - liver 
+           - gallbladder_and_bile_ducts
+           - pancreas
+           - spleen
+           - adrenal_glands
+           - kidneys_and_ureters
+           - urinary_bladder
+           - reproductive
+           - gastrointestinal
+           - retroperitoneum_peritoneum
+           - vessels
+           - lymph_nodes
+           - abdominal_wall_soft_tissues
+           - bones
+
+        Expected JSON format:
+        {{
+            "liver": "finding text",
+            "kidneys_and_ureters": "finding text"
+        }}"""
+
         try:
             completion = await self.client.chat.completions.create(
                 model="llama-3.2-3b-preview",
-                messages=[{"role": "system", "content": prompt}],
+                messages=[
+                    {"role": "system", "content": "You are a radiologist assistant that categorizes findings by anatomical section."},
+                    {"role": "user", "content": prompt}
+                ],
                 temperature=0,
                 max_tokens=8192,
                 top_p=0.1,
@@ -385,14 +413,26 @@ class CTReportGenerator:
         if not section_findings:
             self.log_processing_step(f"SECTION: {section}", f"Using normal template text: {normal_text}")
             return {section: {"text": normal_text}}
+
+        prompt = f"""Process the following finding for the {section} section of a CT report.
+
+        Finding: {section_findings}
+
+        Use appropriate medical terminology and formatting.
+        Return response in JSON format with exactly this structure:
+        {{
+            "{section}": {{
+                "text": "Complete finding description"
+            }}
+        }}"""
             
         try:
             completion = await self.client.chat.completions.create(
                 model="llama-3.2-3b-preview",
-                messages=[{
-                    "role": "system", 
-                    "content": f"Process finding for {section}: {section_findings}"
-                }],
+                messages=[
+                    {"role": "system", "content": "You are a radiologist crafting detailed report sections."},
+                    {"role": "user", "content": prompt}
+                ],
                 temperature=0,
                 max_tokens=8192,
                 top_p=0.1,
@@ -410,7 +450,7 @@ class CTReportGenerator:
             return {section: {"text": f"Error processing {section}"}}
 
     def convert_to_text_report(self, report_json: Dict[str, Any]) -> str:
-        """Convert JSON report to formatted text."""
+        """Convert JSON report to formatted text with better spacing."""
         text_report = []
         text_report.append("CT ABDOMEN AND PELVIS REPORT")
         text_report.append("\nFINDINGS:")
@@ -418,11 +458,10 @@ class CTReportGenerator:
         sections = report_json.get("findings", {}).get("sections", {})
         for section in self.sections:
             if section in sections:
-                # Convert section name to title case and replace underscores
                 section_name = section.replace("_", " ").title()
                 section_text = sections[section]["text"]
                 text_report.append(f"\n{section_name}:")
-                text_report.append(f"{section_text}")
+                text_report.append(f"  {section_text}")
         
         return "\n".join(text_report)
 
