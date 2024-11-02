@@ -338,7 +338,6 @@ class CTReportGenerator:
             }
         }
         
-class CTReportGenerator:
     async def categorize_findings(self, dictation: str) -> Dict[str, str]:
         """Preprocessing step to categorize findings into appropriate sections."""
         
