@@ -342,7 +342,7 @@ class CTReportGenerator:
         """Utility function to log processing steps"""
         st.text(f"[{step}] {message}")
         
-async def categorize_findings(self, dictation: str) -> Dict[str, str]:
+    async def categorize_findings(self, dictation: str) -> Dict[str, str]:
         """Preprocessing step to categorize findings with enhanced logging."""
         self.log_processing_step("PREPROCESS", f"Input dictation: {dictation}")
         
