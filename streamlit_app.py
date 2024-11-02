@@ -343,47 +343,51 @@ class CTReportGenerator:
         st.text(f"[{step}] {message}")
         
     async def categorize_findings(self, dictation: str) -> Dict[str, str]:
-        """Preprocessing step to categorize findings with enhanced logging."""
+        """Preprocessing step to categorize findings with stricter rules."""
         self.log_processing_step("PREPROCESS", f"Input dictation: {dictation}")
         
-        prompt = f"""Please help me categorize these radiology findings into JSON format.
-
-        Task: Take these raw findings and organize them by anatomical section.
-
+        prompt = f"""Categorize these radiology findings by anatomical section.
+    
         Raw findings: "{dictation}"
-
-        Rules:
-        1. Only include sections that have explicit findings
-        2. Use exact finding language
-        3. Return a valid JSON object
-        4. For each finding, identify the correct anatomical section from this list:
-           - lower_chest
-           - liver 
-           - gallbladder_and_bile_ducts
-           - pancreas
-           - spleen
-           - adrenal_glands
-           - kidneys_and_ureters
-           - urinary_bladder
-           - reproductive
-           - gastrointestinal
-           - retroperitoneum_peritoneum
-           - vessels
-           - lymph_nodes
-           - abdominal_wall_soft_tissues
-           - bones
-
-        Expected JSON format:
-        {{
-            "liver": "finding text",
-            "kidneys_and_ureters": "finding text"
-        }}"""
-
+    
+        STRICT RULES:
+        1. Only include sections with EXPLICITLY mentioned findings
+        2. Use EXACTLY the finding language provided - do not add details
+        3. Only use these exact section names:
+            - lower_chest
+            - liver
+            - gallbladder_and_bile_ducts
+            - pancreas
+            - spleen
+            - adrenal_glands
+            - kidneys_and_ureters
+            - urinary_bladder
+            - reproductive
+            - gastrointestinal
+            - retroperitoneum_peritoneum
+            - vessels
+            - lymph_nodes
+            - abdominal_wall_soft_tissues
+            - bones
+        4. Map findings to the most appropriate section:
+            - Lung findings → lower_chest
+            - Bowel/intestinal findings → gastrointestinal
+            - etc.
+    
+        Example input: "atelectasis, sigmoid diverticulitis"
+        Example output:
+        {
+            "lower_chest": "atelectasis",
+            "gastrointestinal": "sigmoid diverticulitis"
+        }
+    
+        Return ONLY the JSON object with findings."""
+    
         try:
             completion = await self.client.chat.completions.create(
                 model="llama-3.2-3b-preview",
                 messages=[
-                    {"role": "system", "content": "You are a radiologist assistant that categorizes findings by anatomical section."},
+                    {"role": "system", "content": "You are a precise radiologist assistant that only includes explicitly mentioned findings."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0,
@@ -401,9 +405,9 @@ class CTReportGenerator:
         except Exception as e:
             self.log_processing_step("ERROR", f"Preprocessing error: {str(e)}")
             return {}
-
+    
     async def process_section(self, section: str, section_findings: str = None) -> Dict[str, Any]:
-        """Process a single section with enhanced logging."""
+        """Process a single section with strict adherence to input findings."""
         self.log_processing_step(f"SECTION: {section}", 
                                f"Processing with findings: {section_findings if section_findings else 'Using normal template'}")
         
@@ -413,16 +417,30 @@ class CTReportGenerator:
         if not section_findings:
             self.log_processing_step(f"SECTION: {section}", f"Using normal template text: {normal_text}")
             return {section: {"text": normal_text}}
-
-        prompt = f"""Process the following finding for the {section} section of a CT report.
-
+    
+        prompt = f"""Generate the {section} section of a CT report.
+    
         Finding: {section_findings}
-
-        Use appropriate medical terminology and formatting.
-        Return response in JSON format with exactly this structure:
+    
+        STRICT RULES:
+        1. Use ONLY the information explicitly provided
+        2. DO NOT add measurements unless specified
+        3. DO NOT add descriptive details unless specified
+        4. DO NOT speculate about appearance
+        5. Keep the description brief and focused
+        6. Use proper medical terminology
+    
+        Return in this exact JSON format:
         {{
             "{section}": {{
-                "text": "Complete finding description"
+                "text": "Brief, accurate description using only provided information"
+            }}
+        }}
+    
+        Example input: "atelectasis"
+        Example output: {{
+            "lower_chest": {{
+                "text": "Atelectasis present in the lower chest."
             }}
         }}"""
             
@@ -430,7 +448,7 @@ class CTReportGenerator:
             completion = await self.client.chat.completions.create(
                 model="llama-3.2-3b-preview",
                 messages=[
-                    {"role": "system", "content": "You are a radiologist crafting detailed report sections."},
+                    {"role": "system", "content": "You are a precise radiologist who only reports explicitly mentioned findings."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0,
@@ -447,7 +465,7 @@ class CTReportGenerator:
             
         except Exception as e:
             self.log_processing_step("ERROR", f"Error processing {section}: {str(e)}")
-            return {section: {"text": f"Error processing {section}"}}
+            return {section: {"text": normal_text}}
 
     def convert_to_text_report(self, report_json: Dict[str, Any]) -> str:
         """Convert JSON report to formatted text with better spacing."""
