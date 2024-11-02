@@ -338,22 +338,21 @@ class CTReportGenerator:
             }
         }
         
-    def log_processing_step(self, step: str, message: str):
-        """Utility function to log processing steps"""
-        st.text(f"[{step}] {message}")
-        
     async def categorize_findings(self, dictation: str) -> Dict[str, str]:
-        """Preprocessing step to categorize findings with stricter rules."""
+        """Preprocessing step to categorize findings."""
         self.log_processing_step("PREPROCESS", f"Input dictation: {dictation}")
         
-        prompt = f"""Categorize these radiology findings by anatomical section.
+        prompt = f"""Please help me categorize these radiology findings into JSON format.
     
-        Raw findings: "{dictation}"
+            Task: Take these raw findings and organize them by anatomical section.
+    
+            Raw findings: "{dictation}"
     
         STRICT RULES:
         1. Only include sections with EXPLICITLY mentioned findings
         2. Use EXACTLY the finding language provided - do not add details
-        3. Only use these exact section names:
+        3. Return a valid JSON object
+        4. Only use these exact section names:
             - lower_chest
             - liver
             - gallbladder_and_bile_ducts
@@ -381,13 +380,16 @@ class CTReportGenerator:
             "gastrointestinal": "sigmoid diverticulitis"
         }
     
-        Return ONLY the JSON object with findings."""
+        Expected JSON format:
+        {{
+            "section_name": "finding text"
+        }}"""
     
         try:
             completion = await self.client.chat.completions.create(
                 model="llama-3.2-3b-preview",
                 messages=[
-                    {"role": "system", "content": "You are a precise radiologist assistant that only includes explicitly mentioned findings."},
+                    {"role": "system", "content": "You are a radiologist assistant that categorizes findings by anatomical section."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0,
