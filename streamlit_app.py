@@ -339,22 +339,23 @@ class CTReportGenerator:
         }
         
     async def process_section(self, dictation: str, section: str) -> Dict[str, Any]:
-        """Process a single section using Groq's Llama 3.2 3B model."""
-        
-        # Get template options for this section
         section_template = json.dumps(self.template["findings"]["sections"].get(section, {}), indent=2)
-        
-        prompt = f"""You are processing the {section} section of a CT abdomen/pelvis report.
+    
+        prompt = f"""You are processing ONLY the {section} section of a CT abdomen/pelvis report.
+
+IMPORTANT RULES:
+1. ONLY include findings that are relevant to the {section} system
+2. DO NOT repeat findings from other systems
+3. If nothing is mentioned about this system, use the normal template text
+4. Each finding must be specific to this anatomical region
+
+For example:
+- Liver findings go ONLY in the liver section
+- Kidney/ureter findings go ONLY in the kidneys_and_ureters section
+- If a finding doesn't belong to this section, ignore it
 
 TEMPLATE OPTIONS FOR THIS SECTION:
 {section_template}
-
-Analysis Steps:
-1. Determine if this section is NORMAL or ABNORMAL based on the dictation
-2. Create appropriate finding text ending with a period
-3. Use the template options above as reference for standardized language
-4. If normal, use the template's normal description
-5. If abnormal, use language from the template options where applicable
 
 Dictation: "{dictation}"
 
