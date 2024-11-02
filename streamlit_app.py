@@ -4,6 +4,7 @@ import httpx
 from typing import Dict, Any
 import os
 from datetime import datetime
+import asyncio
 
 class CTReportGenerator:
     def __init__(self):
@@ -404,7 +405,7 @@ Return a JSON object with this exact format:
                     
             return report
 
-# Streamlit interface
+# Modify the Streamlit interface part:
 st.title('CT Report Generator')
 
 # Input area for dictation
@@ -428,21 +429,12 @@ if st.button('Generate Report'):
             # Create report generator
             generator = CTReportGenerator()
             
-            # Process each section
-            report = {"findings": {"sections": {}}}
+            # Create async function to run the report generation
+            async def run_report_generation():
+                return await generator.generate_report(dictation)
             
-            # Use httpx in sync mode for simplicity
-            with httpx.Client() as client:
-                for idx, section in enumerate(generator.sections):
-                    # Update progress
-                    progress = (idx + 1) / len(generator.sections)
-                    section_progress.progress(progress)
-                    status_text.text(f"{progress_text} Processing {section}...")
-                    
-                    # Process section
-                    result = generator.process_section(client, dictation, section)
-                    if result:
-                        report["findings"]["sections"].update(result)
+            # Run the async function
+            report = asyncio.run(run_report_generation())
             
             # Display results
             st.json(report)
