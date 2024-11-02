@@ -338,26 +338,78 @@ class CTReportGenerator:
             }
         }
         
-    async def process_section(self, dictation: str, section: str) -> Dict[str, Any]:
+class CTReportGenerator:
+    async def categorize_findings(self, dictation: str) -> Dict[str, str]:
+        """Preprocessing step to categorize findings into appropriate sections."""
+        
+        prompt = """Categorize each finding in this dictation into the appropriate section.
+        Only include findings that are explicitly mentioned.
+        
+        Available sections:
+        - lower_chest
+        - liver
+        - gallbladder_and_bile_ducts
+        - pancreas
+        - spleen 
+        - adrenal_glands
+        - kidneys_and_ureters
+        - urinary_bladder
+        - reproductive
+        - gastrointestinal
+        - retroperitoneum_peritoneum
+        - vessels
+        - lymph_nodes
+        - abdominal_wall_soft_tissues
+        - bones
+
+        Return a JSON object where keys are section names and values are the relevant findings.
+        Only include sections that have findings. Be specific and precise.
+        
+        Example output format:
+        {
+            "liver": "mild steatosis",
+            "kidneys_and_ureters": "5mm distal right ureter stone, delayed right nephrogram, right ureter inflammation"
+        }
+
+        Dictation: "{dictation}"
+        """
+
+        try:
+            completion = await self.client.chat.completions.create(
+                model="llama-3.2-3b-preview",
+                messages=[{"role": "system", "content": prompt}],
+                temperature=0,
+                max_tokens=8192,
+                top_p=0.1,
+                stream=False,
+                response_format={"type": "json_object"},
+                stop=None
+            )
+            
+            categorized = json.loads(completion.choices[0].message.content)
+            return categorized
+            
+        except Exception as e:
+            st.error(f"Error categorizing findings: {str(e)}")
+            return {}
+
+    async def process_section(self, section: str, section_findings: str = None) -> Dict[str, Any]:
+        """Process a single section using Groq's Llama 3.2 3B model."""
+        
         section_template = json.dumps(self.template["findings"]["sections"].get(section, {}), indent=2)
-    
+        
+        # Modify prompt to use categorized findings
         prompt = f"""You are processing ONLY the {section} section of a CT abdomen/pelvis report.
 
 IMPORTANT RULES:
-1. ONLY include findings that are relevant to the {section} system
-2. DO NOT repeat findings from other systems
-3. If nothing is mentioned about this system, use the normal template text
-4. Each finding must be specific to this anatomical region
-
-For example:
-- Liver findings go ONLY in the liver section
-- Kidney/ureter findings go ONLY in the kidneys_and_ureters section
-- If a finding doesn't belong to this section, ignore it
+1. Use ONLY the provided findings for this section
+2. If no findings are provided, use the normal template text
+3. Format the finding using appropriate language from the template
 
 TEMPLATE OPTIONS FOR THIS SECTION:
 {section_template}
 
-Dictation: "{dictation}"
+Findings for this section: {section_findings if section_findings else "No specific findings - use normal template"}
 
 Return a JSON object with this exact format:
 {{
@@ -369,9 +421,7 @@ Return a JSON object with this exact format:
         try:
             completion = await self.client.chat.completions.create(
                 model="llama-3.2-3b-preview",
-                messages=[
-                    {"role": "system", "content": prompt}
-                ],
+                messages=[{"role": "system", "content": prompt}],
                 temperature=0,
                 max_tokens=8192,
                 top_p=0.1,
@@ -391,10 +441,15 @@ Return a JSON object with this exact format:
         """Generate complete report by processing all sections concurrently."""
         report = {"findings": {"sections": {}}}
         
+        # First, categorize all findings
+        categorized_findings = await self.categorize_findings(dictation)
+        
         # Create tasks for all sections
         tasks = []
         for section in self.sections:
-            task = self.process_section(dictation, section)
+            # Pass only the relevant findings for each section
+            section_findings = categorized_findings.get(section)
+            task = self.process_section(section, section_findings)
             tasks.append(task)
         
         # Wait for all sections to complete
