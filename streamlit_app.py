@@ -1,6 +1,6 @@
 import streamlit as st
 import json
-import httpx
+from groq import AsyncGroq
 from typing import Dict, Any
 import os
 from datetime import datetime
@@ -11,6 +11,8 @@ class CTReportGenerator:
         self.api_key = os.getenv("GROQ_API_KEY")
         if not self.api_key:
             raise ValueError("GROQ_API_KEY environment variable not set")
+            
+        self.client = AsyncGroq(api_key=self.api_key)
             
         self.sections = [
             "lower_chest",
@@ -336,7 +338,7 @@ class CTReportGenerator:
             }
         }
         
-    async def process_section(self, client: httpx.AsyncClient, dictation: str, section: str) -> Dict[str, Any]:
+    async def process_section(self, dictation: str, section: str) -> Dict[str, Any]:
         """Process a single section using Groq's Llama 3.2 3B model."""
         
         # Get template options for this section
@@ -364,46 +366,45 @@ Return a JSON object with this exact format:
 }}"""
 
         try:
-            response = await client.post(
-                "https://api.groq.com/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "llama-3.2-3b-preview",
-                    "messages": [{"role": "system", "content": prompt}],
-                    "temperature": 0,
-                    "max_tokens": 8192,
-                    "top_p": 0.1,
-                    "stream": False,
-                    "response_format": {"type": "json_object"},
-                    "stop": None
-                },
-                timeout=30.0
+            completion = await self.client.chat.completions.create(
+                model="llama-3.2-3b-preview",
+                messages=[
+                    {"role": "system", "content": prompt}
+                ],
+                temperature=0,
+                max_tokens=8192,
+                top_p=0.1,
+                stream=False,
+                response_format={"type": "json_object"},
+                stop=None
             )
             
-            result = response.json()
-            if result and 'choices' in result:
-                content = result['choices'][0]['message']['content']
-                return json.loads(content)
+            content = completion.choices[0].message.content
+            return json.loads(content)
             
         except Exception as e:
             st.error(f"Error processing {section}: {str(e)}")
             return None
-            
+
     async def generate_report(self, dictation: str) -> Dict[str, Any]:
-        """Generate complete report by processing all sections asynchronously."""
+        """Generate complete report by processing all sections concurrently."""
         report = {"findings": {"sections": {}}}
         
-        async with httpx.AsyncClient() as client:
-            tasks = []
-            for section in self.sections:
-                result = await self.process_section(client, dictation, section)
-                if result:
-                    report["findings"]["sections"].update(result)
-                    
-            return report
+        # Create tasks for all sections
+        tasks = []
+        for section in self.sections:
+            task = self.process_section(dictation, section)
+            tasks.append(task)
+        
+        # Wait for all sections to complete
+        results = await asyncio.gather(*tasks)
+        
+        # Combine results
+        for result in results:
+            if result:
+                report["findings"]["sections"].update(result)
+                
+        return report
 
 # Modify the Streamlit interface part:
 st.title('CT Report Generator')
@@ -429,12 +430,8 @@ if st.button('Generate Report'):
             # Create report generator
             generator = CTReportGenerator()
             
-            # Create async function to run the report generation
-            async def run_report_generation():
-                return await generator.generate_report(dictation)
-            
             # Run the async function
-            report = asyncio.run(run_report_generation())
+            report = asyncio.run(generator.generate_report(dictation))
             
             # Display results
             st.json(report)
