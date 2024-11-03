@@ -409,7 +409,7 @@ class CTReportGenerator:
                                f"Processing with findings: {section_findings if section_findings else 'Using normal template'}")
         
         section_template = self.template["findings"]["sections"].get(section, {})
-        normal_text = section_template.get("normal", "Normal examination")
+        normal_text = section_template.get("normal", "Normal examination.")
         
         if not section_findings:
             self.log_processing_step(f"SECTION: {section}", f"Using normal template text: {normal_text}")
@@ -422,21 +422,18 @@ class CTReportGenerator:
             CRITICAL RULES:
             1. Output MUST contain ONLY information from the input text
             2. Use ONLY measurements EXPLICITLY stated in the input
-            3. Use ONLY image references EXPLICITLY stated in the input
+            3. Preserve ALL image references (Series/Image numbers) exactly as given
             4. DO NOT create or infer ANY measurements
             5. DO NOT create or infer ANY image references
             6. DO NOT add ANY details not present in input
             7. DO NOT speculate or elaborate
-            8. Format the finding clearly but preserve ALL original information
-    
-            BAD OUTPUT (adds details): "3.5cm mass" when input doesn't specify size
-            BAD OUTPUT (adds series): "Series 001" when input doesn't mention series
-            GOOD OUTPUT: Use exact text from input, properly formatted
-    
+            8. Format as a complete sentence with proper capitalization and ending period
+            9. Maintain ALL parenthetical references like (Series X Image Y)
+
             Return in this exact JSON format:
             {{
                 "{section}": {{
-                    "text": "Finding exactly as provided, no additional details"
+                    "text": "Complete sentence with proper formatting and ALL original details."
                 }}
             }}"""
             
@@ -446,7 +443,7 @@ class CTReportGenerator:
                 messages=[
                     {
                         "role": "system", 
-                        "content": "You are a precise radiologist who ONLY reports exactly what is in the input. Never add measurements, series numbers, or any details not explicitly provided."
+                        "content": "You are a precise radiologist who reports findings as complete sentences, preserving ALL measurements and references while using proper capitalization and ending periods."
                     },
                     {
                         "role": "user", 
