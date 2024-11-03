@@ -337,7 +337,11 @@ class CTReportGenerator:
                 }
             }
         }
-        
+
+    def log_processing_step(self, step: str, message: str):
+        """Utility function to log processing steps"""
+        st.text(f"[{step}] {message}")
+
     async def categorize_findings(self, dictation: str) -> Dict[str, str]:
         """Preprocessing step to categorize findings."""
         self.log_processing_step("PREPROCESS", f"Input dictation: {dictation}")
@@ -348,43 +352,34 @@ class CTReportGenerator:
     
             Raw findings: "{dictation}"
     
-        STRICT RULES:
-        1. Only include sections with EXPLICITLY mentioned findings
-        2. Use EXACTLY the finding language provided - do not add details
-        3. Return a valid JSON object
-        4. Only use these exact section names:
-            - lower_chest
-            - liver
-            - gallbladder_and_bile_ducts
-            - pancreas
-            - spleen
-            - adrenal_glands
-            - kidneys_and_ureters
-            - urinary_bladder
-            - reproductive
-            - gastrointestinal
-            - retroperitoneum_peritoneum
-            - vessels
-            - lymph_nodes
-            - abdominal_wall_soft_tissues
-            - bones
-        4. Map findings to the most appropriate section:
-            - Lung findings → lower_chest
-            - Bowel/intestinal findings → gastrointestinal
-            - etc.
+            STRICT RULES:
+            1. Only include sections with EXPLICITLY mentioned findings
+            2. Use EXACTLY the finding language provided - do not add details
+            3. Return a valid JSON object
+            4. Only use these exact section names:
+                - lower_chest
+                - liver
+                - gallbladder_and_bile_ducts
+                - pancreas
+                - spleen
+                - adrenal_glands
+                - kidneys_and_ureters
+                - urinary_bladder
+                - reproductive
+                - gastrointestinal
+                - retroperitoneum_peritoneum
+                - vessels
+                - lymph_nodes
+                - abdominal_wall_soft_tissues
+                - bones
     
-        Example input: "atelectasis, sigmoid diverticulitis"
-        Example output:
-        {
-            "lower_chest": "atelectasis",
-            "gastrointestinal": "sigmoid diverticulitis"
-        }
-    
-        Expected JSON format:
-        {{
-            "section_name": "finding text"
-        }}"""
-    
+            Example input: "atelectasis, sigmoid diverticulitis"
+            Example output:
+            {{
+                "lower_chest": "atelectasis",
+                "gastrointestinal": "sigmoid diverticulitis"
+            }}"""
+
         try:
             completion = await self.client.chat.completions.create(
                 model="llama-3.2-3b-preview",
