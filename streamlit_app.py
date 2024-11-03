@@ -428,7 +428,6 @@ class CTReportGenerator:
             6. DO NOT add ANY details not present in input
             7. DO NOT speculate or elaborate
             8. Format as a complete sentence with proper capitalization and ending period
-            9. Maintain ALL parenthetical references like (Series X Image Y)
 
             Return in this exact JSON format:
             {{
