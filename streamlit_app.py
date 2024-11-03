@@ -388,7 +388,7 @@ class CTReportGenerator:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0,
-                max_tokens=8192,
+                max_tokens=8000,
                 top_p=0.1,
                 stream=False,
                 response_format={"type": "json_object"},
