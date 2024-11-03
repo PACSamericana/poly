@@ -415,23 +415,28 @@ class CTReportGenerator:
             self.log_processing_step(f"SECTION: {section}", f"Using normal template text: {normal_text}")
             return {section: {"text": normal_text}}
     
-        prompt = f"""Process the following finding for the {section} section of a CT report.
+        prompt = f"""Process this finding for the {section} section of a CT report.
     
             Finding: {section_findings}
     
-            STRICT RULES:
-            1. Use ONLY the information explicitly provided
-            2. PRESERVE ALL measurements exactly as given
-            3. MAINTAIN ALL image references (Series/Image numbers)
-            4. DO NOT add any details that weren't provided
-            5. DO NOT speculate about appearance
-            6. Use proper medical terminology
-            7. Include everything from the input, just formatted clearly
+            CRITICAL RULES:
+            1. Output MUST contain ONLY information from the input text
+            2. Use ONLY measurements EXPLICITLY stated in the input
+            3. Use ONLY image references EXPLICITLY stated in the input
+            4. DO NOT create or infer ANY measurements
+            5. DO NOT create or infer ANY image references
+            6. DO NOT add ANY details not present in input
+            7. DO NOT speculate or elaborate
+            8. Format the finding clearly but preserve ALL original information
+    
+            BAD OUTPUT (adds details): "3.5cm mass" when input doesn't specify size
+            BAD OUTPUT (adds series): "Series 001" when input doesn't mention series
+            GOOD OUTPUT: Use exact text from input, properly formatted
     
             Return in this exact JSON format:
             {{
                 "{section}": {{
-                    "text": "Complete finding description with ALL measurements and references"
+                    "text": "Finding exactly as provided, no additional details"
                 }}
             }}"""
             
@@ -441,7 +446,7 @@ class CTReportGenerator:
                 messages=[
                     {
                         "role": "system", 
-                        "content": "You are a precise radiologist. Report all findings exactly as given, maintaining all measurements and image references."
+                        "content": "You are a precise radiologist who ONLY reports exactly what is in the input. Never add measurements, series numbers, or any details not explicitly provided."
                     },
                     {
                         "role": "user", 
