@@ -465,18 +465,18 @@ class CTReportGenerator:
             return {section: {"text": normal_text}}
 
     def convert_to_text_report(self, report_json: Dict[str, Any]) -> str:
-        """Convert JSON report to formatted text with better spacing."""
+        """Convert JSON report to markdown formatted text."""
         text_report = []
-        text_report.append("CT ABDOMEN AND PELVIS REPORT")
-        text_report.append("\nFINDINGS:")
+        text_report.append("# CT ABDOMEN AND PELVIS REPORT")
+        text_report.append("\n## FINDINGS:")
         
         sections = report_json.get("findings", {}).get("sections", {})
         for section in self.sections:
             if section in sections:
                 section_name = section.replace("_", " ").title()
                 section_text = sections[section]["text"]
-                text_report.append(f"\n{section_name}:")
-                text_report.append(f"  {section_text}")
+                text_report.append(f"\n### {section_name}")
+                text_report.append(f"{section_text}")
         
         return "\n".join(text_report)
 
@@ -514,12 +514,12 @@ if st.button('Generate Report'):
             generator = CTReportGenerator()
             report = asyncio.run(generator.generate_report(dictation))
             
-            # Display formatted text report
+            # Display formatted markdown report
             st.subheader("Generated Report:")
             text_report = generator.convert_to_text_report(report)
-            st.text(text_report)
+            st.markdown(text_report)  # Changed from st.text() to st.markdown()
             
-            # Still save the JSON for reference
+            # Save the JSON
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"ct_report_{timestamp}.json"
             with open(filename, 'w') as f:
