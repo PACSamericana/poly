@@ -415,38 +415,38 @@ class CTReportGenerator:
             self.log_processing_step(f"SECTION: {section}", f"Using normal template text: {normal_text}")
             return {section: {"text": normal_text}}
     
-        prompt = f"""Generate the {section} section of a CT report.
+        prompt = f"""Process the following finding for the {section} section of a CT report.
     
-        Finding: {section_findings}
+            Finding: {section_findings}
     
-        STRICT RULES:
-        1. Use ONLY the information explicitly provided
-        2. DO NOT add measurements unless specified
-        3. DO NOT add descriptive details unless specified
-        4. DO NOT speculate about appearance
-        5. Keep the description brief and focused
-        6. Use proper medical terminology
+            STRICT RULES:
+            1. Use ONLY the information explicitly provided
+            2. PRESERVE ALL measurements exactly as given
+            3. MAINTAIN ALL image references (Series/Image numbers)
+            4. DO NOT add any details that weren't provided
+            5. DO NOT speculate about appearance
+            6. Use proper medical terminology
+            7. Include everything from the input, just formatted clearly
     
-        Return in this exact JSON format:
-        {{
-            "{section}": {{
-                "text": "Brief, accurate description using only provided information"
-            }}
-        }}
-    
-        Example input: "atelectasis"
-        Example output: {{
-            "lower_chest": {{
-                "text": "Atelectasis present in the lower chest."
-            }}
-        }}"""
+            Return in this exact JSON format:
+            {{
+                "{section}": {{
+                    "text": "Complete finding description with ALL measurements and references"
+                }}
+            }}"""
             
         try:
             completion = await self.client.chat.completions.create(
                 model="llama-3.2-3b-preview",
                 messages=[
-                    {"role": "system", "content": "You are a precise radiologist who only reports explicitly mentioned findings."},
-                    {"role": "user", "content": prompt}
+                    {
+                        "role": "system", 
+                        "content": "You are a precise radiologist. Report all findings exactly as given, maintaining all measurements and image references."
+                    },
+                    {
+                        "role": "user", 
+                        "content": prompt
+                    }
                 ],
                 temperature=0,
                 max_tokens=8192,
