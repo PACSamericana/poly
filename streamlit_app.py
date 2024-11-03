@@ -356,7 +356,13 @@ class CTReportGenerator:
             1. Only include sections with EXPLICITLY mentioned findings
             2. Use EXACTLY the finding language provided - do not add details
             3. Return a valid JSON object
-            4. Only use these exact section names:
+            4. IMPORTANT: When a finding is followed by (Series X Image Y), 
+               keep this reference WITH the finding it belongs to
+               Example: "finding (series 3 image 78)" should stay together
+               as one complete finding
+            5. Image references in parentheses ALWAYS belong to the
+               finding immediately before them
+            6. Only use these exact section names:
                 - lower_chest
                 - liver
                 - gallbladder_and_bile_ducts
@@ -428,6 +434,7 @@ class CTReportGenerator:
             6. DO NOT add ANY details not present in input
             7. DO NOT speculate or elaborate
             8. Format as a complete sentence with proper capitalization and ending period
+            9. Maintain ALL parenthetical references like (Series X Image Y) if they are present
 
             Return in this exact JSON format:
             {{
