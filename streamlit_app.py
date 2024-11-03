@@ -379,12 +379,12 @@ class CTReportGenerator:
                 "lower_chest": "atelectasis",
                 "gastrointestinal": "sigmoid diverticulitis"
             }}"""
-
+    
         try:
             completion = await self.client.chat.completions.create(
-                model="llama-3.2-3b-preview",
+                model="llama-3.1-8b-instant",  # Changed to more powerful model
                 messages=[
-                    {"role": "system", "content": "You are a radiologist assistant that categorizes findings by anatomical section."},
+                    {"role": "system", "content": "You are a radiologist assistant that categorizes findings by anatomical section. Maintain all reference information like image numbers."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0,
