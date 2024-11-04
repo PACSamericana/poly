@@ -121,7 +121,9 @@ class CTReportGenerator:
         Remember:
         - NEVER split related findings across sections
         - NEVER skip any finding
-        - ALL lung findings go to lower_chest"""
+        - ALL lung findings go to lower_chest
+        
+        Return a JSON object mapping sections to their findings, preserving exact wording."""
 
     # Rest of your method remains the same
     
