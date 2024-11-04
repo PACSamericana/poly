@@ -93,45 +93,27 @@ class CTReportGenerator:
         """Preprocessing step to categorize findings."""
         self.log_processing_step("PREPROCESS", f"Input dictation: {dictation}")
         
-        prompt = f"""Please help me categorize these radiology findings into JSON format.
+        prompt = f"""You are a radiologist assistant categorizing imaging findings. 
+        
+        TASK:
+        Break down this dictation into individual findings and assign each to the appropriate anatomical section.
+        
+        Raw dictation: "{dictation}"
+        
+        CRITICAL RULES:
+        1. Parse input word by word to identify EVERY finding
+        2. EVERY abnormality, measurement, or descriptor MUST be categorized
+        3. If unsure, categorize based on anatomical location
+        4. Keep Series/Image references with their associated finding
+        5. Use provided section names EXACTLY as listed
+        6. Never skip or ignore any finding, no matter how minor
+        
+        Valid section names:
+        {json.dumps(self.sections, indent=2)}
+        
+        Return a JSON object mapping sections to their findings, preserving exact wording."""
     
-            Task: Take these raw findings and organize them by anatomical section.
-    
-            Raw findings: "{dictation}"
-    
-            STRICT RULES:
-            1. Only include sections with EXPLICITLY mentioned findings
-            2. Use EXACTLY the finding language provided - do not add details
-            3. Return a valid JSON object
-            4. IMPORTANT: When a finding is followed by (Series X Image Y), 
-               keep this reference WITH the finding it belongs to
-               Example: "finding (series 3 image 78)" should stay together
-               as one complete finding
-            5. Image references in parentheses ALWAYS belong to the
-               finding immediately before them
-            6. Only use these exact section names:
-                - lower_chest
-                - liver
-                - gallbladder_and_bile_ducts
-                - pancreas
-                - spleen
-                - adrenal_glands
-                - kidneys_and_ureters
-                - urinary_bladder
-                - reproductive
-                - gastrointestinal
-                - retroperitoneum_peritoneum
-                - vessels
-                - lymph_nodes
-                - abdominal_wall_soft_tissues
-                - bones
-    
-            Example input: "atelectasis, sigmoid diverticulitis"
-            Example output:
-            {{
-                "lower_chest": "atelectasis",
-                "gastrointestinal": "sigmoid diverticulitis"
-            }}"""
+    # Rest of your method remains the same
     
         try:
             completion = await self.client.chat.completions.create(
