@@ -121,12 +121,13 @@ Finding: {json.dumps(example['finding'])}
 Output: "{example['output']}"
 
 IMPORTANT:
-1. Only include series/image numbers that were explicitly provided
-2. Expand medical abbreviations into their full forms
-3. Do not add any imaginary image references
-4. For paired structures (kidneys, lungs, adnexa), always describe both sides
-5. When one side is abnormal, explicitly state that the other side is normal
-6. Maintain natural language flow while being precise
+1. NEVER say "normal" or "normal-appearing" for any structure that has an abnormality
+2. Only include series/image numbers that were explicitly provided
+3. Expand medical abbreviations into their full forms
+4. Do not add any imaginary image references
+5. For paired structures (kidneys, lungs, adnexa), always describe both sides
+6. When one side is abnormal, explicitly state that the other side is normal
+7. Maintain natural language flow while being precise
 """
 
 # Function to expand abbreviations in text
