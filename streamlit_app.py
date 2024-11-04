@@ -106,10 +106,10 @@ class CTReportGenerator:
         CRITICAL RULES:
         1. EVERY finding MUST be categorized
         2. Each finding goes to ONE section only
-        3. Lung findings (atelectasis, effusion, etc.) ALWAYS go to lower_chest
         4. Related findings MUST stay together (e.g., appendix and surrounding changes go together in gastrointestinal)
-        5. Preserve exact measurements and image references with their findings
-        6. Use these exact section names: {json.dumps(self.sections, indent=2)}
+        5. Expand common medical abbreviations to their full forms (e.g., "hydro" → "hydronephrosis")
+        6. Preserve exact measurements and image references with their findings
+        7. Use these exact section names: {json.dumps(self.sections, indent=2)}
     
         Output format:
         {{
@@ -125,7 +125,7 @@ class CTReportGenerator:
         Remember:
         - NEVER split related findings across sections
         - NEVER skip any finding
-        - ALL lung findings go to lower_chest
+        - NEVER add any image references that weren't in the original text
         
         Return a JSON object mapping sections to their findings, preserving exact wording."""
 
@@ -190,6 +190,7 @@ class CTReportGenerator:
                add them in parentheses at the end of that finding like:
                "...shows mass (Series 2 Image 45)"
             7. Create natural sentence flow
+            8. NEVER add any image references that weren't in the original text
     
             Examples:
             Finding: "mild fatty atrophy pancreas"
