@@ -164,7 +164,6 @@ class CTReportGenerator:
         section_template = self.template["findings"]["sections"].get(section, {})
         normal_text = section_template.get("normal", "Normal examination.")
         
-        # If no findings, return normal template
         if not section_findings:
             self.log_processing_step(f"SECTION: {section}", f"Using normal template text: {normal_text}")
             return {section: {"text": normal_text}}
@@ -175,24 +174,25 @@ class CTReportGenerator:
             Finding to integrate: "{section_findings}"
     
             CRITICAL RULES:
-            1. Start with the normal template text
-            2. Intelligently replace parts of the normal template with any abnormal findings
-            3. Keep the normal template text for areas not mentioned in the finding
-            4. Preserve ALL measurements EXACTLY as stated
-            5. Keep ALL image references (Series/Image numbers) exactly as given
-            6. Create grammatically correct, flowing sentences
-            7. Do not add information not present in the finding
-            8. End all sentences with periods
+            1. NEVER say "normal" or "normal-appearing" for any structure that has an abnormality
+            2. Start by identifying what parts of the normal template are contradicted by the findings
+            3. Replace contradicted parts while keeping unaffected parts
+            4. Preserve ALL measurements and references exactly
+            5. Create natural sentence flow
     
-            Example Input:
-            Normal: "Normal size and attenuation. Smooth surface contour. No focal hepatic lesions."
-            Finding: "mild hepatic steatosis"
-            Output: "Normal size with mildly decreased attenuation. Smooth surface contour. No focal hepatic lesions."
+            Examples:
+            Finding: "mild fatty atrophy pancreas"
+            BAD: "Normal-appearing pancreas with mild fatty atrophy" (contradiction)
+            GOOD: "Pancreas demonstrates mild fatty atrophy. No mass or ductal dilation."
+    
+            Finding: "periappendiceal fat stranding with 6mm appendicolith"
+            BAD: "Normal-appearing appendix with periappendiceal fat stranding" (contradiction)
+            GOOD: "Appendix shows periappendiceal fat stranding with a 6mm appendicolith"
     
             Return in this exact JSON format:
             {{
                 "{section}": {{
-                    "text": "Complete sentence(s) integrating findings with normal template."
+                    "text": "Complete sentence(s) integrating findings correctly."
                 }}
             }}"""
             
