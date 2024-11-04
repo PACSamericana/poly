@@ -131,7 +131,7 @@ class CTReportGenerator:
     
         try:
             completion = await self.client.chat.completions.create(
-                model="llama-3.1-8b-instant",  # Changed to more powerful model
+                model="llama-3.1-70b-instant",  # Changed to more powerful model
                 messages=[
                     {"role": "system", "content": "You are a radiologist assistant that categorizes findings by anatomical section. Maintain all reference information like image numbers."},
                     {"role": "user", "content": prompt}
@@ -200,7 +200,7 @@ class CTReportGenerator:
             
         try:
             completion = await self.client.chat.completions.create(
-                model="llama-3.2-3b-preview",
+                model="llama-3.1-70b-instant",
                 messages=[
                     {
                         "role": "system", 
@@ -212,7 +212,7 @@ class CTReportGenerator:
                     }
                 ],
                 temperature=0,
-                max_tokens=8192,
+                max_tokens=8000,
                 top_p=0.1,
                 stream=False,
                 response_format={"type": "json_object"},
