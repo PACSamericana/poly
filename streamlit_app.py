@@ -93,25 +93,37 @@ class CTReportGenerator:
         """Preprocessing step to categorize findings."""
         self.log_processing_step("PREPROCESS", f"Input dictation: {dictation}")
         
-        prompt = f"""You are a radiologist assistant categorizing imaging findings. 
-        
-        TASK:
-        Break down this dictation into individual findings and assign each to the appropriate anatomical section.
-        
+        prompt = f"""You are a radiologist assistant categorizing imaging findings.
+    
+        TASK: Analyze this dictation and assign each finding to EXACTLY ONE most appropriate anatomical section.
+    
         Raw dictation: "{dictation}"
-        
+    
         CRITICAL RULES:
-        1. Parse input word by word to identify EVERY finding
-        2. EVERY abnormality, measurement, or descriptor MUST be categorized
-        3. If unsure, categorize based on anatomical location
-        4. Keep Series/Image references with their associated finding
-        5. Use provided section names EXACTLY as listed
-        6. Never skip or ignore any finding, no matter how minor
-        
-        Valid section names:
-        {json.dumps(self.sections, indent=2)}
-        
-        Return a JSON object mapping sections to their findings, preserving exact wording."""
+        1. EVERY finding MUST be categorized
+        2. Each finding goes to ONE section only
+        3. Lung findings (atelectasis, effusion, etc.) ALWAYS go to lower_chest
+        4. Related findings MUST stay together (e.g., appendix and surrounding changes go together in gastrointestinal)
+        5. Preserve exact measurements and image references with their findings
+        6. Use these exact section names: {json.dumps(self.sections, indent=2)}
+    
+        Output format:
+        {{
+            "section_name": [
+                {{
+                    "finding": "exact finding text",
+                    "series": "Series X if present",
+                    "image": "Image Y if present"
+                }}
+            ]
+        }}
+    
+        Remember:
+        - NEVER split related findings across sections
+        - NEVER skip any finding
+        - ALL lung findings go to lower_chest"""
+
+    # Rest of your method remains the same
     
     # Rest of your method remains the same
     
