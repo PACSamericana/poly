@@ -189,8 +189,9 @@ class CTReportGenerator:
             6. When including a finding that has series/image references, 
                add them in parentheses at the end of that finding like:
                "...shows mass (Series 2 Image 45)"
-            7. Create natural sentence flow
-            8. NEVER add any image references that weren't in the original text
+            7. For paired structures, ALWAYS describe the status of both sides
+            8. Create natural sentence flow
+            9. NEVER add any image references that weren't in the original text
     
             Examples:
             Finding: "mild fatty atrophy pancreas"
