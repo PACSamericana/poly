@@ -70,14 +70,15 @@ SECTION_PROCESSING_EXAMPLES = {
         "output": "The liver is normal in size with smooth surface contour. There is a subcentimeter low-density cyst in the left hepatic lobe. Portal and hepatic veins are patent."
     },
     
+    "kidneys_and_ureters": {
+        "template": "Normal-sized kidneys with symmetric enhancement. No hydronephrosis or renal stones.",
+        "finding": "mild right hydronephrosis",
+        "output": "Right kidney demonstrates mild hydronephrosis. Left kidney appears normal without hydronephrosis or stones. No renal masses or cysts identified bilaterally."
+    },
     "reproductive": {
         "template": "Reproductive organs are unremarkable.",
-        "finding": {
-            "finding": "3.2x4.5x9.0 cm right adnexal mass increased from prior previously 2.4 x 2.3 x 2.3 cm",
-            "series": "4",
-            "image": "76"
-        },
-        "output": "There is a right adnexal mass measuring 3.2 x 4.5 x 9.0 cm demonstrating interval growth from prior measurement of 2.4 x 2.3 x 2.3 cm (Series 4, Image 76)."
+        "finding": "3.2x4.5x9.0 cm right adnexal mass increased from prior previously 2.4 x 2.3 x 2.3 cm (Series 4, Image 76)",
+        "output": "There is a right adnexal mass measuring 3.2 x 4.5 x 9.0 cm demonstrating interval growth from prior measurement of 2.4 x 2.3 x 2.3 cm (Series 4, Image 76). Left adnexa appears normal without masses or cysts."
     },
     
     "lymph_nodes": {
@@ -123,7 +124,9 @@ IMPORTANT:
 1. Only include series/image numbers that were explicitly provided
 2. Expand medical abbreviations into their full forms
 3. Do not add any imaginary image references
-4. Maintain natural language flow while being precise
+4. For paired structures (kidneys, lungs, adnexa), always describe both sides
+5. When one side is abnormal, explicitly state that the other side is normal
+6. Maintain natural language flow while being precise
 """
 
 # Function to expand abbreviations in text
