@@ -70,11 +70,18 @@ SECTION_PROCESSING_EXAMPLES = {
         "output": "The liver is normal in size with smooth surface contour. There is a subcentimeter low-density cyst in the left hepatic lobe. Portal and hepatic veins are patent."
     },
     
+    "adrenal_glands": {
+    "template": "Normal-appearing adrenal glands without nodule or mass.",
+    "finding": "nonspecific right adrenal thickening",
+    "output": "Nonspecific right adrenal thickening. The left adrenal gland is without nodule or mass."
+    },
+    
     "kidneys_and_ureters": {
         "template": "Normal-sized kidneys with symmetric enhancement. No hydronephrosis or renal stones.",
         "finding": "mild right hydronephrosis",
         "output": "Right kidney demonstrates mild hydronephrosis. Left kidney appears normal without hydronephrosis or stones. No renal masses or cysts identified bilaterally."
     },
+    
     "reproductive": {
         "template": "Reproductive organs are unremarkable.",
         "finding": "3.2x4.5x9.0 cm right adnexal mass increased from prior previously 2.4 x 2.3 x 2.3 cm (Series 4, Image 76)",
