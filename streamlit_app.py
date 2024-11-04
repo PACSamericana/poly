@@ -92,11 +92,15 @@ class CTReportGenerator:
     async def categorize_findings(self, dictation: str) -> Dict[str, str]:
         """Preprocessing step to categorize findings."""
         self.log_processing_step("PREPROCESS", f"Input dictation: {dictation}")
+
+        from prompt_examples import PREPROCESSING_EXAMPLE, format_preprocessing_example
         
         prompt = f"""You are a radiologist assistant categorizing imaging findings.
-    
+        
         TASK: Analyze this dictation and assign each finding to EXACTLY ONE most appropriate anatomical section.
-    
+        
+        {format_preprocessing_example()}  # Add the example here
+        
         Raw dictation: "{dictation}"
     
         CRITICAL RULES:
@@ -164,10 +168,15 @@ class CTReportGenerator:
             self.log_processing_step(f"SECTION: {section}", f"Using normal template text: {normal_text}")
             return {section: {"text": normal_text}}
     
+        from prompt_examples import SECTION_PROCESSING_EXAMPLES, format_section_example
+        
+        # In process_section method, modify the prompt:
         prompt = f"""Process this finding for the {section} section of a CT report.
-    
-            Normal Template: "{normal_text}"
-            Finding to integrate: "{section_findings}"
+        
+        {format_section_example(section)}  # Add section-specific example
+        
+        Normal Template: "{normal_text}"
+        Finding to integrate: "{section_findings}"
     
             CRITICAL RULES:
             1. NEVER say "normal" or "normal-appearing" for any structure that has an abnormality
