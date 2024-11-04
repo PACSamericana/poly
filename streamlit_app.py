@@ -173,8 +173,14 @@ class CTReportGenerator:
             1. NEVER say "normal" or "normal-appearing" for any structure that has an abnormality
             2. Start by identifying what parts of the normal template are contradicted by the findings
             3. Replace contradicted parts while keeping unaffected parts
-            4. Preserve ALL measurements and references exactly
-            5. Create natural sentence flow
+            4. Each finding object has:
+               - "finding": the actual finding text
+               - "series": series reference if present
+               - "image": image reference if present
+            6. When including a finding that has series/image references, 
+               add them in parentheses at the end of that finding like:
+               "...shows mass (Series 2 Image 45)"
+            7. Create natural sentence flow
     
             Examples:
             Finding: "mild fatty atrophy pancreas"
