@@ -1,5 +1,15 @@
 import json
 
+RADIOLOGY_ABBREVIATIONS = {
+    "hydro": "hydronephrosis",
+    "hetero": "heterogeneous",
+    "calc": "calcification",
+    "calcs": "calcifications",
+    "AP": "anteroposterior",
+    "sig": "signifcant",
+    "approx": "approximately",
+}
+
 # Preprocessing (Categorization) Example
 
 PREPROCESSING_EXAMPLE = {
@@ -83,13 +93,18 @@ SECTION_PROCESSING_EXAMPLES = {
     }
 }
 
-# Helper function to format preprocessing example for prompt
 def format_preprocessing_example():
     return f"""
 Example Input: "{PREPROCESSING_EXAMPLE['input']}"
 
 Example Output:
 {json.dumps(PREPROCESSING_EXAMPLE['output'], indent=2)}
+
+IMPORTANT NOTES:
+1. Only include series/image numbers that were explicitly mentioned in the input
+2. Expand common abbreviations (e.g., "hydro" → "hydronephrosis")
+3. Maintain exact measurements and comparative descriptions
+4. Do not add any image references that weren't in the original text
 """
 
 # Helper function to format section processing example
@@ -103,4 +118,23 @@ Example for {section}:
 Template: "{example['template']}"
 Finding: {json.dumps(example['finding'])}
 Output: "{example['output']}"
+
+IMPORTANT:
+1. Only include series/image numbers that were explicitly provided
+2. Expand medical abbreviations into their full forms
+3. Do not add any imaginary image references
+4. Maintain natural language flow while being precise
 """
+
+# Function to expand abbreviations in text
+def expand_abbreviations(text):
+    words = text.split()
+    expanded = []
+    for word in words:
+        # Check if the word (lowercase) is in our abbreviations dictionary
+        lower_word = word.lower()
+        if lower_word in RADIOLOGY_ABBREVIATIONS:
+            expanded.append(RADIOLOGY_ABBREVIATIONS[lower_word])
+        else:
+            expanded.append(word)
+    return " ".join(expanded)
